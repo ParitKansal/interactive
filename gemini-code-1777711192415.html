@@ -1,0 +1,253 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gaussian Naive Bayes Classifier</title>
+    <!-- Load Chart.js via CDN -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            background-color: #f9fafb;
+            color: #333;
+            display: flex;
+            justify-content: center;
+            padding: 2rem;
+        }
+        .widget-container {
+            background: white;
+            padding: 2rem;
+            border-radius: 12px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            max-width: 800px;
+            width: 100%;
+        }
+        .controls {
+            margin-bottom: 2rem;
+            text-align: center;
+        }
+        input[type=range] {
+            width: 80%;
+            margin: 1rem 0;
+        }
+        .slider-value {
+            font-size: 1.2rem;
+            font-weight: bold;
+            color: #2563eb;
+        }
+        .results {
+            margin-top: 2rem;
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1rem;
+        }
+        .class-card {
+            padding: 1rem;
+            border-radius: 8px;
+            border: 1px solid #e5e7eb;
+            background: #f8fafc;
+        }
+        .class-card h3 {
+            margin-top: 0;
+            text-align: center;
+        }
+        .prediction {
+            grid-column: 1 / -1;
+            text-align: center;
+            padding: 1rem;
+            background: #dbeafe;
+            color: #1e3a8a;
+            border-radius: 8px;
+            font-size: 1.2rem;
+            font-weight: bold;
+        }
+        .stat {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 0.5rem;
+            font-size: 0.95rem;
+        }
+        .stat-value {
+            font-family: monospace;
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+
+<div class="widget-container">
+    <h2 style="text-align: center; margin-top: 0;">Cat vs. Dog Weight Classifier</h2>
+    
+    <div class="controls">
+        <label for="weightSlider">Input Weight (lbs): <span id="weightLabel" class="slider-value">12.0</span></label><br>
+        <input type="range" id="weightSlider" min="5" max="25" step="0.1" value="12">
+    </div>
+
+    <div style="position: relative; height: 350px; width: 100%;">
+        <canvas id="gaussianChart"></canvas>
+    </div>
+
+    <div class="results">
+        <div class="class-card" style="border-top: 4px solid #ef4444;">
+            <h3 style="color: #ef4444;">Cat Class</h3>
+            <div class="stat"><span>Mean ($\mu$):</span> <span class="stat-value">9.0</span></div>
+            <div class="stat"><span>Variance ($\sigma^2$):</span> <span class="stat-value">1.0</span></div>
+            <hr style="border: 0; border-top: 1px solid #e5e7eb; margin: 10px 0;">
+            <div class="stat"><span>Likelihood:</span> <span class="stat-value" id="catLikelihood">0.0000</span></div>
+            <div class="stat"><span>Posterior:</span> <span class="stat-value" id="catPosterior">0.0000</span></div>
+        </div>
+        
+        <div class="class-card" style="border-top: 4px solid #3b82f6;">
+            <h3 style="color: #3b82f6;">Dog Class</h3>
+            <div class="stat"><span>Mean ($\mu$):</span> <span class="stat-value">16.0</span></div>
+            <div class="stat"><span>Variance ($\sigma^2$):</span> <span class="stat-value">4.0</span></div>
+            <hr style="border: 0; border-top: 1px solid #e5e7eb; margin: 10px 0;">
+            <div class="stat"><span>Likelihood:</span> <span class="stat-value" id="dogLikelihood">0.0000</span></div>
+            <div class="stat"><span>Posterior:</span> <span class="stat-value" id="dogPosterior">0.0000</span></div>
+        </div>
+
+        <div class="prediction" id="finalPrediction">
+            Prediction: Loading...
+        </div>
+    </div>
+</div>
+
+<script>
+    // --- Math & Model Parameters ---
+    const CAT = { mean: 9, var: 1, prior: 0.5 };
+    const DOG = { mean: 16, var: 4, prior: 0.5 };
+
+    // Gaussian Probability Density Function
+    function gaussian(x, mean, variance) {
+        return (1 / Math.sqrt(2 * Math.PI * variance)) * Math.exp(-Math.pow(x - mean, 2) / (2 * variance));
+    }
+
+    // --- Chart Setup ---
+    const ctx = document.getElementById('gaussianChart').getContext('2d');
+    
+    // Generate data points for the bell curves
+    const xValues = [];
+    const catData = [];
+    const dogData = [];
+    for (let x = 5; x <= 25; x += 0.2) {
+        xValues.push(x.toFixed(1));
+        catData.push(gaussian(x, CAT.mean, CAT.var));
+        dogData.push(gaussian(x, DOG.mean, DOG.var));
+    }
+
+    // Initialize Chart.js
+    const chart = new Chart(ctx, {
+        type: 'line',
+        data: {
+            labels: xValues,
+            datasets: [
+                {
+                    label: 'Cat Distribution',
+                    data: catData,
+                    borderColor: '#ef4444',
+                    backgroundColor: 'rgba(239, 68, 68, 0.1)',
+                    fill: true,
+                    tension: 0.4,
+                    pointRadius: 0
+                },
+                {
+                    label: 'Dog Distribution',
+                    data: dogData,
+                    borderColor: '#3b82f6',
+                    backgroundColor: 'rgba(59, 130, 246, 0.1)',
+                    fill: true,
+                    tension: 0.4,
+                    pointRadius: 0
+                },
+                {
+                    // This dataset represents the vertical line
+                    label: 'Input Weight',
+                    data: [], 
+                    borderColor: '#10b981',
+                    borderWidth: 2,
+                    borderDash: [5, 5],
+                    pointRadius: 5,
+                    pointBackgroundColor: '#10b981',
+                    fill: false
+                }
+            ]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            scales: {
+                x: { title: { display: true, text: 'Weight (lbs)' } },
+                y: { title: { display: true, text: 'Probability Density' }, min: 0 }
+            },
+            interaction: { mode: 'index', intersect: false }
+        }
+    });
+
+    // --- Interactivity Logic ---
+    const slider = document.getElementById('weightSlider');
+    const weightLabel = document.getElementById('weightLabel');
+    const catLikeEl = document.getElementById('catLikelihood');
+    const catPostEl = document.getElementById('catPosterior');
+    const dogLikeEl = document.getElementById('dogLikelihood');
+    const dogPostEl = document.getElementById('dogPosterior');
+    const predictionEl = document.getElementById('finalPrediction');
+
+    function updateCalculations(weight) {
+        // Update math
+        const catLikelihood = gaussian(weight, CAT.mean, CAT.var);
+        const dogLikelihood = gaussian(weight, DOG.mean, DOG.var);
+        
+        const catPosterior = catLikelihood * CAT.prior;
+        const dogPosterior = dogLikelihood * DOG.prior;
+
+        // Update DOM
+        weightLabel.innerText = weight.toFixed(1);
+        catLikeEl.innerText = catLikelihood.toFixed(4);
+        catPostEl.innerText = catPosterior.toFixed(4);
+        dogLikeEl.innerText = dogLikelihood.toFixed(4);
+        dogPostEl.innerText = dogPosterior.toFixed(4);
+
+        if (catPosterior > dogPosterior) {
+            predictionEl.innerHTML = `Predicted Class: <strong>Cat</strong> (Score: ${catPosterior.toFixed(4)} > ${dogPosterior.toFixed(4)})`;
+            predictionEl.style.backgroundColor = '#fee2e2';
+            predictionEl.style.color = '#991b1b';
+        } else {
+            predictionEl.innerHTML = `Predicted Class: <strong>Dog</strong> (Score: ${dogPosterior.toFixed(4)} > ${catPosterior.toFixed(4)})`;
+            predictionEl.style.backgroundColor = '#dbeafe';
+            predictionEl.style.color = '#1e3a8a';
+        }
+
+        // Update Chart Vertical Line
+        // Find the index of the closest xValue to place our vertical marker
+        let closestIndex = 0;
+        let minDiff = Infinity;
+        xValues.forEach((val, idx) => {
+            const diff = Math.abs(val - weight);
+            if (diff < minDiff) {
+                minDiff = diff;
+                closestIndex = idx;
+            }
+        });
+
+        // Create a fake dataset that peaks at the top of the chart at the selected X value
+        const maxDensity = Math.max(...catData, ...dogData);
+        const lineData = new Array(xValues.length).fill(null);
+        lineData[closestIndex] = maxDensity; // Draw point at top
+        lineData[closestIndex - 1 > 0 ? closestIndex - 1 : 0] = 0; // Draw point at bottom
+
+        chart.data.datasets[2].data = lineData;
+        chart.update('none'); // Update without full animation
+    }
+
+    // Event Listener for Slider
+    slider.addEventListener('input', (e) => {
+        updateCalculations(parseFloat(e.target.value));
+    });
+
+    // Initial load
+    updateCalculations(parseFloat(slider.value));
+</script>
+
+</body>
+</html>
