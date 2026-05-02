@@ -1,0 +1,629 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Advanced Decision Tree (CART) Visualizer</title>
+    <script src="https://d3js.org/d3.v7.min.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: transparent; /* better for embeds */
+            margin: 0;
+            padding: 10px;
+            display: flex;
+            justify-content: center;
+            color: #e2e8f0;
+        }
+
+        #main-wrapper {
+            width: 100%;
+            max-width: 480px;
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+
+        .card {
+            background-color: #151518;
+            border-radius: 12px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.4);
+            border: 1px solid #3f3f46;
+            padding: 15px;
+            position: relative;
+        }
+
+        .viz-card {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding-top: 35px;
+        }
+
+        .separator {
+            width: 100%;
+            height: 1px;
+            background-color: #3f3f46;
+            margin: 15px 0;
+        }
+
+        /* --- Controls --- */
+        .controls-container {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            align-items: center;
+            gap: 12px;
+            background-color: #27272a;
+            border-radius: 12px;
+            padding: 15px;
+            border: none;
+        }
+
+        .control-group {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .control-label {
+            font-size: 12px;
+            font-weight: 500;
+            color: #f4f4f5;
+        }
+
+        /* Slider */
+        .slider-container {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        input[type=range] {
+            -webkit-appearance: none;
+            width: 100px;
+            background: transparent;
+        }
+
+        input[type=range]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            height: 16px;
+            width: 6px;
+            border-radius: 3px;
+            background: #94a3b8;
+            cursor: pointer;
+            margin-top: -6px;
+        }
+
+        input[type=range]::-webkit-slider-runnable-track {
+            width: 100%;
+            height: 4px;
+            cursor: pointer;
+            background: #52525b;
+            border-radius: 2px;
+        }
+        
+        .value-box {
+            background-color: #1e1e24;
+            border: 1px solid #52525b;
+            border-radius: 6px;
+            padding: 4px 10px;
+            font-weight: bold;
+            font-size: 12px;
+            min-width: 15px;
+            text-align: center;
+            color: #fff;
+        }
+
+        /* Button Groups */
+        .btn-group {
+            display: flex;
+            border-radius: 6px;
+            overflow: hidden;
+            border: 1px solid #3b82f6;
+        }
+
+        .btn {
+            background-color: transparent;
+            color: #cbd5e1;
+            border: none;
+            padding: 6px 12px;
+            font-size: 11px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .btn.active {
+            background-color: #2b4c9b; 
+            color: white;
+        }
+
+        .btn:hover:not(.active) {
+            background-color: #3f3f46;
+        }
+
+        /* Borderless Group for Pattern */
+        #pattern-group {
+            border: none;
+            background-color: transparent;
+        }
+
+        #pattern-group .btn {
+            border-radius: 6px;
+            margin: 0 2px;
+        }
+
+        #pattern-group .btn.active {
+            background-color: #2b4c9b;
+        }
+
+        .action-btn {
+            background-color: #3f3f46;
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 8px;
+            font-size: 11px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: background-color 0.2s;
+        }
+
+        .action-btn:hover {
+            background-color: #52525b;
+        }
+
+        .toggle-btn {
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            background-color: transparent;
+            color: #fff;
+            border: 1px solid #fff;
+            padding: 4px 10px;
+            border-radius: 12px;
+            font-size: 10px;
+            font-weight: 600;
+            cursor: pointer;
+            z-index: 10;
+        }
+
+        .toggle-btn:hover {
+            background-color: rgba(255,255,255,0.1);
+        }
+
+        /* --- Visualization --- */
+        #scatter-stage, #tree-stage {
+            position: relative;
+        }
+
+        /* Scatter */
+        .dot { stroke: #151518; stroke-width: 1px; }
+        
+        /* Tree */
+        .node circle { stroke: #a1a1aa; stroke-width: 2px; cursor: pointer; }
+        .link { fill: none; stroke: #52525b; stroke-width: 1.5px; }
+        .node-label { fill: #f8fafc; font-size: 10px; font-weight: 700; }
+        .class-label { fill: #f8fafc; font-size: 10px; font-weight: 700; }
+
+        .tooltip {
+            position: absolute;
+            background: #27272a;
+            color: white;
+            padding: 8px 12px;
+            border-radius: 6px;
+            font-size: 11px;
+            pointer-events: none;
+            opacity: 0;
+            transition: opacity 0.2s;
+            z-index: 100;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.4);
+            border: 1px solid #3f3f46;
+        }
+    </style>
+</head>
+<body>
+
+    <div id="main-wrapper">
+        <div class="card viz-card">
+            <button id="toggle-regions" class="toggle-btn">DECISION REGIONS</button>
+            <div id="scatter-stage"></div>
+            
+            <div class="separator"></div>
+            
+            <div id="tree-stage"></div>
+        </div>
+
+        <div class="controls-container">
+            <div class="control-group">
+                <span class="control-label">Max Depth</span>
+                <div class="slider-container">
+                    <input type="range" id="maxDepth" min="1" max="7" value="3">
+                    <div id="maxDepthVal" class="value-box">3</div>
+                </div>
+            </div>
+
+            <div class="control-group">
+                <span class="control-label">Criterion</span>
+                <div class="btn-group" id="criterion-group">
+                    <button class="btn active" data-val="gini">Gini</button>
+                    <button class="btn" data-val="entropy">Entropy</button>
+                </div>
+            </div>
+
+            <div class="control-group">
+                <span class="control-label">Pattern</span>
+                <div class="btn-group" id="pattern-group">
+                    <button class="btn active" data-val="moons">Moons</button>
+                    <button class="btn" data-val="xor">XOR</button>
+                    <button class="btn" data-val="clusters">Clusters</button>
+                </div>
+            </div>
+
+            <button id="new-data-btn" class="action-btn">New Data</button>
+        </div>
+    </div>
+
+    <div id="tooltip" class="tooltip"></div>
+
+<script>
+/**
+ * --- DATASET GENERATION ---
+ */
+let currentPattern = 'moons';
+let showRegions = true;
+let dataset = [];
+const colors = ["#4d90fe", "#ff7675"]; // Class A (Blue), Class B (Pink)
+
+function generateMoonsData(samples = 150, noise = 0.15) { // Reduced samples for smaller view
+    const data = [];
+    for (let i = 0; i < samples; i++) {
+        const side = i < samples / 2 ? 0 : 1;
+        const x = Math.cos(Math.PI * (i / (samples / 2))) + (side ? 0.5 : 0);
+        const y = Math.sin(Math.PI * (i / (samples / 2))) * (side ? -1 : 1) + (side ? -0.25 : 0);
+        data.push({ x: x + (Math.random() - 0.5) * noise * 2, y: y + (Math.random() - 0.5) * noise * 2, label: side });
+    }
+    return data;
+}
+
+function generateXORData(samples = 150, noise = 0.2) {
+    const data = [];
+    for (let i = 0; i < samples; i++) {
+        const x = (Math.random() * 2 - 1) * 2;
+        const y = (Math.random() * 2 - 1) * 2;
+        const label = (x * y > 0) ? 0 : 1;
+        data.push({ x: x + (Math.random() - 0.5) * noise * 2, y: y + (Math.random() - 0.5) * noise * 2, label: label });
+    }
+    return data;
+}
+
+function generateClustersData(samples = 150, noise = 0.4) {
+    const data = [];
+    const centers = [[-1, -1], [1, 1], [1, -1], [-1, 1]];
+    const labels = [0, 0, 1, 1];
+    for (let i = 0; i < samples; i++) {
+        const cluster = i % 4;
+        const center = centers[cluster];
+        data.push({ x: center[0] + (Math.random() - 0.5) * noise * 2, y: center[1] + (Math.random() - 0.5) * noise * 2, label: labels[cluster] });
+    }
+    return data;
+}
+
+function generateData() {
+    if (currentPattern === 'moons') dataset = generateMoonsData();
+    else if (currentPattern === 'xor') dataset = generateXORData();
+    else if (currentPattern === 'clusters') dataset = generateClustersData();
+}
+
+generateData();
+
+/**
+ * --- CART ALGORITHM ---
+ */
+class CARTNode {
+    constructor(depth = 0) {
+        this.depth = depth;
+        this.left = null;
+        this.right = null;
+        this.feature = null; 
+        this.threshold = null;
+        this.impurity = null;
+        this.samples = 0;
+        this.value = [0, 0];
+        this.label = null; 
+        this.isLeaf = false;
+        this.purityRatio = 0;
+    }
+}
+
+class DecisionTree {
+    constructor(maxDepth = 3, criterion = 'gini') {
+        this.maxDepth = maxDepth;
+        this.criterion = criterion;
+        this.root = null;
+    }
+
+    calculateImpurity(counts) {
+        const total = counts[0] + counts[1];
+        if (total === 0) return 0;
+        const p0 = counts[0] / total;
+        const p1 = counts[1] / total;
+
+        if (this.criterion === 'gini') {
+            return 1 - (p0 * p0 + p1 * p1);
+        } else { // Entropy
+            let entropy = 0;
+            if (p0 > 0) entropy -= p0 * Math.log2(p0);
+            if (p1 > 0) entropy -= p1 * Math.log2(p1);
+            return entropy;
+        }
+    }
+
+    getCounts(data) {
+        const counts = [0, 0];
+        data.forEach(d => counts[d.label]++);
+        return counts;
+    }
+
+    bestSplit(data) {
+        let bestImpurity = Infinity;
+        let bestSplit = null;
+        const totalSamples = data.length;
+
+        ['x', 'y'].forEach((feature, fIndex) => {
+            const values = data.map(d => d[feature]).sort((a, b) => a - b);
+            
+            for (let i = 1; i < values.length; i++) {
+                if (values[i] === values[i - 1]) continue;
+                const threshold = (values[i] + values[i - 1]) / 2;
+
+                const left = data.filter(d => d[feature] <= threshold);
+                const right = data.filter(d => d[feature] > threshold);
+
+                if (left.length === 0 || right.length === 0) continue;
+
+                const leftImpurity = this.calculateImpurity(this.getCounts(left));
+                const rightImpurity = this.calculateImpurity(this.getCounts(right));
+
+                const weightedImpurity = (left.length / totalSamples) * leftImpurity + (right.length / totalSamples) * rightImpurity;
+
+                if (weightedImpurity < bestImpurity) {
+                    bestImpurity = weightedImpurity;
+                    bestSplit = { feature: fIndex, fName: feature, threshold, impurity: weightedImpurity, left, right };
+                }
+            }
+        });
+        return bestSplit;
+    }
+
+    build(node, data) {
+        node.samples = data.length;
+        node.value = this.getCounts(data);
+        node.impurity = this.calculateImpurity(node.value);
+        node.label = node.value[0] >= node.value[1] ? 0 : 1;
+        
+        const majorityCount = Math.max(node.value[0], node.value[1]);
+        node.purityRatio = majorityCount / node.samples;
+
+        if (node.depth >= this.maxDepth || node.impurity === 0 || data.length < 2) {
+            node.isLeaf = true;
+            return;
+        }
+
+        const split = this.bestSplit(data);
+        if (!split) {
+            node.isLeaf = true;
+            return;
+        }
+
+        node.feature = split.feature;
+        node.fName = split.fName;
+        node.threshold = split.threshold;
+
+        node.left = new CARTNode(node.depth + 1);
+        this.build(node.left, split.left);
+
+        node.right = new CARTNode(node.depth + 1);
+        this.build(node.right, split.right);
+    }
+
+    train(data) {
+        this.root = new CARTNode();
+        this.build(this.root, data);
+    }
+
+    predictPoint(point) {
+        let node = this.root;
+        while (!node.isLeaf) {
+            const val = point[node.fName];
+            node = val <= node.threshold ? node.left : node.right;
+        }
+        return node.label;
+    }
+}
+
+/**
+ * --- VISUALIZATION SETUP ---
+ */
+const scatterWidth = 430, scatterHeight = 180;
+const treeWidth = 430, treeHeight = 220;
+const margin = { top: 10, right: 10, bottom: 10, left: 10 };
+
+const scatterStage = d3.select("#scatter-stage");
+
+const canvas = scatterStage.append("canvas")
+    .attr("width", scatterWidth)
+    .attr("height", scatterHeight)
+    .style("position", "absolute")
+    .style("top", margin.top + "px")
+    .style("left", margin.left + "px")
+    .style("pointer-events", "none");
+
+const ctx = canvas.node().getContext("2d");
+
+const scatterSvg = scatterStage.append("svg")
+    .attr("width", scatterWidth + margin.left + margin.right)
+    .attr("height", scatterHeight + margin.top + margin.bottom)
+    .style("position", "relative")
+    .append("g")
+    .attr("transform", `translate(${margin.left},${margin.top})`);
+
+const treeSvg = d3.select("#tree-stage")
+    .append("svg")
+    .attr("width", treeWidth + margin.left + margin.right)
+    .attr("height", treeHeight + margin.top + margin.bottom)
+    .append("g")
+    .attr("transform", `translate(${margin.left},${margin.top + 20})`);
+
+const tooltip = d3.select("#tooltip");
+
+function updateVisuals() {
+    const maxDepth = +d3.select("#maxDepth").property("value");
+    const criterion = d3.select("#criterion-group .active").attr("data-val");
+    
+    const tree = new DecisionTree(maxDepth, criterion);
+    tree.train(dataset);
+
+    renderScatterPlot(tree);
+    renderTreeDiagram(tree.root);
+}
+
+function renderScatterPlot(tree) {
+    scatterSvg.selectAll("*").remove();
+    ctx.clearRect(0, 0, scatterWidth, scatterHeight);
+
+    const x = d3.scaleLinear()
+        .domain(d3.extent(dataset, d => d.x)).nice()
+        .range([0, scatterWidth]);
+
+    const y = d3.scaleLinear()
+        .domain(d3.extent(dataset, d => d.y)).nice()
+        .range([scatterHeight, 0]);
+
+    if (showRegions) {
+        const gridSize = 4;
+        
+        ctx.strokeStyle = "rgba(255,255,255,0.03)";
+        ctx.lineWidth = 1;
+
+        for(let mx = 0; mx < scatterWidth; mx += gridSize) {
+            for(let my = 0; my < scatterHeight; my += gridSize) {
+                const px = x.invert(mx + gridSize/2);
+                const py = y.invert(my + gridSize/2);
+                const label = tree.predictPoint({x: px, y: py});
+                
+                ctx.fillStyle = label === 0 ? "rgba(77, 144, 254, 0.25)" : "rgba(255, 118, 117, 0.25)";
+                ctx.fillRect(mx, my, gridSize, gridSize);
+                ctx.strokeRect(mx, my, gridSize, gridSize);
+            }
+        }
+    }
+
+    scatterSvg.selectAll(".dot")
+        .data(dataset)
+        .enter().append("circle")
+        .attr("class", "dot")
+        .attr("r", 4)
+        .attr("cx", d => x(d.x))
+        .attr("cy", d => y(d.y))
+        .style("fill", d => colors[d.label]);
+}
+
+function renderTreeDiagram(rootNode) {
+    treeSvg.selectAll("*").remove();
+
+    const treemap = d3.tree().size([treeWidth, treeHeight - 60]);
+    const d3Root = d3.hierarchy(rootNode, d => (d.isLeaf ? null : [d.left, d.right]));
+    const nodes = treemap(d3Root);
+
+    treeSvg.selectAll(".link")
+        .data(nodes.descendants().slice(1))
+        .enter().append("path")
+        .attr("class", "link")
+        .attr("d", d => "M" + d.x + "," + d.y 
+            + "C" + d.x + "," + (d.y + d.parent.y) / 2 
+            + " " + d.parent.x + "," + (d.y + d.parent.y) / 2 
+            + " " + d.parent.x + "," + d.parent.y);
+
+    const node = treeSvg.selectAll(".node")
+        .data(nodes.descendants())
+        .enter().append("g")
+        .attr("class", d => "node" + (d.children ? " node--internal" : " node--leaf"))
+        .attr("transform", d => "translate(" + d.x + "," + d.y + ")");
+
+    node.append("circle")
+        .attr("r", 8)
+        .style("fill", d => d.children ? "#3f3f46" : colors[d.data.label])
+        .on("mouseover", function(event, d) {
+            d3.select(this).style("stroke", "#fff");
+            tooltip.transition().duration(200).style("opacity", 1);
+            tooltip.html(`
+                <strong>Node Stats</strong><br/>
+                Impurity: ${d.data.impurity.toFixed(3)}<br/>
+                Samples: ${d.data.samples}<br/>
+                Values: [${d.data.value[0]}, ${d.data.value[1]}]<br/>
+                Class: ${d.data.label === 0 ? 'Class A' : 'Class B'}
+            `)
+            .style("left", (event.pageX + 15) + "px")
+            .style("top", (event.pageY - 28) + "px");
+        })
+        .on("mousemove", function(event) {
+            tooltip.style("left", (event.pageX + 15) + "px")
+                   .style("top", (event.pageY - 28) + "px");
+        })
+        .on("mouseout", function() {
+            d3.select(this).style("stroke", "#a1a1aa");
+            tooltip.transition().duration(500).style("opacity", 0);
+        });
+
+    const internalNodes = node.filter(d => d.children);
+    internalNodes.append("text")
+        .attr("dy", "-20px")
+        .attr("text-anchor", "middle")
+        .attr("class", "node-label")
+        .text(d => `${d.data.fName.toUpperCase()} ≤ ${d.data.threshold.toFixed(2)}`);
+
+    const leafNodes = node.filter(d => !d.children);
+    // Removed text labels for leaf nodes to reduce crowding
+}
+
+/**
+ * --- EVENT LISTENERS ---
+ */
+d3.select("#maxDepth").on("input", function() {
+    d3.select("#maxDepthVal").text(this.value);
+    updateVisuals();
+});
+
+d3.selectAll("#criterion-group .btn").on("click", function() {
+    d3.selectAll("#criterion-group .btn").classed("active", false);
+    d3.select(this).classed("active", true);
+    updateVisuals();
+});
+
+d3.selectAll("#pattern-group .btn").on("click", function() {
+    d3.selectAll("#pattern-group .btn").classed("active", false);
+    d3.select(this).classed("active", true);
+    currentPattern = d3.select(this).attr("data-val");
+    generateData();
+    updateVisuals();
+});
+
+d3.select("#new-data-btn").on("click", function() {
+    generateData();
+    updateVisuals();
+});
+
+d3.select("#toggle-regions").on("click", function() {
+    showRegions = !showRegions;
+    d3.select(this).style("background-color", showRegions ? "rgba(255,255,255,0.1)" : "transparent");
+    updateVisuals();
+});
+
+// Initial Render
+updateVisuals();
+</script>
+</body>
+</html>
