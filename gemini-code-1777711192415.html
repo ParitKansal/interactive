@@ -72,6 +72,10 @@
             font-family: monospace;
             font-weight: bold;
         }
+        .highlight {
+            color: #059669;
+            font-size: 1.1rem;
+        }
     </style>
 </head>
 <body>
@@ -91,20 +95,20 @@
     <div class="results">
         <div class="class-card" style="border-top: 4px solid #ef4444;">
             <h3 style="color: #ef4444;">Cat Class</h3>
-            <div class="stat"><span>Mean :</span> <span class="stat-value">9.0</span></div>
-            <div class="stat"><span>Variance :</span> <span class="stat-value">1.0</span></div>
+            <div class="stat"><span>Mean (&mu;):</span> <span class="stat-value">9.0</span></div>
+            <div class="stat"><span>Variance (&sigma;<sup>2</sup>):</span> <span class="stat-value">1.0</span></div>
             <hr style="border: 0; border-top: 1px solid #e5e7eb; margin: 10px 0;">
-            <div class="stat"><span>Likelihood:</span> <span class="stat-value" id="catLikelihood">0.0000</span></div>
-            <div class="stat"><span>Posterior:</span> <span class="stat-value" id="catPosterior">0.0000</span></div>
+            <div class="stat"><span>Raw Score:</span> <span class="stat-value" id="catPosterior">0.0000</span></div>
+            <div class="stat"><span>Probability:</span> <span class="stat-value highlight" id="catPercentage">0.00%</span></div>
         </div>
         
         <div class="class-card" style="border-top: 4px solid #3b82f6;">
             <h3 style="color: #3b82f6;">Dog Class</h3>
-            <div class="stat"><span>Mean :</span> <span class="stat-value">16.0</span></div>
-            <div class="stat"><span>Variance :</span> <span class="stat-value">4.0</span></div>
+            <div class="stat"><span>Mean (&mu;):</span> <span class="stat-value">16.0</span></div>
+            <div class="stat"><span>Variance (&sigma;<sup>2</sup>):</span> <span class="stat-value">4.0</span></div>
             <hr style="border: 0; border-top: 1px solid #e5e7eb; margin: 10px 0;">
-            <div class="stat"><span>Likelihood:</span> <span class="stat-value" id="dogLikelihood">0.0000</span></div>
-            <div class="stat"><span>Posterior:</span> <span class="stat-value" id="dogPosterior">0.0000</span></div>
+            <div class="stat"><span>Raw Score:</span> <span class="stat-value" id="dogPosterior">0.0000</span></div>
+            <div class="stat"><span>Probability:</span> <span class="stat-value highlight" id="dogPercentage">0.00%</span></div>
         </div>
 
         <div class="prediction" id="finalPrediction">
@@ -161,7 +165,6 @@
                     pointRadius: 0
                 },
                 {
-                    // This dataset represents the vertical line
                     label: 'Input Weight',
                     data: [], 
                     borderColor: '#10b981',
@@ -187,39 +190,52 @@
     // --- Interactivity Logic ---
     const slider = document.getElementById('weightSlider');
     const weightLabel = document.getElementById('weightLabel');
-    const catLikeEl = document.getElementById('catLikelihood');
     const catPostEl = document.getElementById('catPosterior');
-    const dogLikeEl = document.getElementById('dogLikelihood');
+    const catPercEl = document.getElementById('catPercentage');
     const dogPostEl = document.getElementById('dogPosterior');
+    const dogPercEl = document.getElementById('dogPercentage');
     const predictionEl = document.getElementById('finalPrediction');
 
     function updateCalculations(weight) {
-        // Update math
+        // Calculate Likelihoods (Needed for math, but not displayed)
         const catLikelihood = gaussian(weight, CAT.mean, CAT.var);
         const dogLikelihood = gaussian(weight, DOG.mean, DOG.var);
         
+        // Calculate Posteriors (Raw Scores)
         const catPosterior = catLikelihood * CAT.prior;
         const dogPosterior = dogLikelihood * DOG.prior;
 
-        // Update DOM
-        weightLabel.innerText = weight.toFixed(1);
-        catLikeEl.innerText = catLikelihood.toFixed(4);
-        catPostEl.innerText = catPosterior.toFixed(4);
-        dogLikeEl.innerText = dogLikelihood.toFixed(4);
-        dogPostEl.innerText = dogPosterior.toFixed(4);
+        // Calculate Normalized Probabilities (Percentages)
+        const totalPosterior = catPosterior + dogPosterior;
+        let catPercentage = 0;
+        let dogPercentage = 0;
+        
+        if (totalPosterior > 0) {
+            catPercentage = (catPosterior / totalPosterior) * 100;
+            dogPercentage = (dogPosterior / totalPosterior) * 100;
+        }
 
+        // Update DOM Elements
+        weightLabel.innerText = weight.toFixed(1);
+        
+        catPostEl.innerText = catPosterior.toFixed(4);
+        catPercEl.innerText = catPercentage.toFixed(2) + '%';
+        
+        dogPostEl.innerText = dogPosterior.toFixed(4);
+        dogPercEl.innerText = dogPercentage.toFixed(2) + '%';
+
+        // Update Final Prediction UI
         if (catPosterior > dogPosterior) {
-            predictionEl.innerHTML = `Predicted Class: <strong>Cat</strong> (Score: ${catPosterior.toFixed(4)} > ${dogPosterior.toFixed(4)})`;
+            predictionEl.innerHTML = `Predicted Class: <strong>Cat</strong> with ${catPercentage.toFixed(1)}% certainty`;
             predictionEl.style.backgroundColor = '#fee2e2';
             predictionEl.style.color = '#991b1b';
         } else {
-            predictionEl.innerHTML = `Predicted Class: <strong>Dog</strong> (Score: ${dogPosterior.toFixed(4)} > ${catPosterior.toFixed(4)})`;
+            predictionEl.innerHTML = `Predicted Class: <strong>Dog</strong> with ${dogPercentage.toFixed(1)}% certainty`;
             predictionEl.style.backgroundColor = '#dbeafe';
             predictionEl.style.color = '#1e3a8a';
         }
 
         // Update Chart Vertical Line
-        // Find the index of the closest xValue to place our vertical marker
         let closestIndex = 0;
         let minDiff = Infinity;
         xValues.forEach((val, idx) => {
@@ -230,14 +246,13 @@
             }
         });
 
-        // Create a fake dataset that peaks at the top of the chart at the selected X value
         const maxDensity = Math.max(...catData, ...dogData);
         const lineData = new Array(xValues.length).fill(null);
-        lineData[closestIndex] = maxDensity; // Draw point at top
-        lineData[closestIndex - 1 > 0 ? closestIndex - 1 : 0] = 0; // Draw point at bottom
+        lineData[closestIndex] = maxDensity; 
+        lineData[closestIndex - 1 > 0 ? closestIndex - 1 : 0] = 0; 
 
         chart.data.datasets[2].data = lineData;
-        chart.update('none'); // Update without full animation
+        chart.update('none'); 
     }
 
     // Event Listener for Slider
@@ -245,7 +260,7 @@
         updateCalculations(parseFloat(e.target.value));
     });
 
-    // Initial load
+    // Initial load calculation
     updateCalculations(parseFloat(slider.value));
 </script>
 
