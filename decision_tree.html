@@ -9,9 +9,9 @@
     <style>
         body {
             font-family: 'Inter', 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background-color: transparent; /* better for embeds */
+            background-color: transparent;
             margin: 0;
-            padding: 10px;
+            padding: 20px;
             display: flex;
             justify-content: center;
             color: #e2e8f0;
@@ -19,228 +19,258 @@
 
         #main-wrapper {
             width: 100%;
-            max-width: 480px;
+            max-width: 1000px;
             display: flex;
-            flex-direction: column;
-            gap: 15px;
+            flex-direction: row;
+            gap: 20px;
+            align-items: stretch;
         }
 
-        .card {
-            background-color: #151518;
-            border-radius: 12px;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.4);
-            border: 1px solid #3f3f46;
-            padding: 15px;
-            position: relative;
-        }
-
-        .viz-card {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            padding-top: 35px;
-        }
-
-        .separator {
-            width: 100%;
-            height: 1px;
-            background-color: #3f3f46;
-            margin: 15px 0;
-        }
-
-        /* --- Controls --- */
+        /* --- Controls Sidebar --- */
         .controls-container {
+            flex: 0 0 240px;
             display: flex;
-            flex-wrap: wrap;
-            justify-content: center;
-            align-items: center;
-            gap: 12px;
-            background-color: #27272a;
-            border-radius: 12px;
-            padding: 15px;
-            border: none;
+            flex-direction: column;
+            gap: 24px;
+            background-color: #151518;
+            border-radius: 16px;
+            padding: 24px;
+            box-shadow: 0 8px 24px rgba(0,0,0,0.4);
+            border: 1px solid #3f3f46;
         }
 
         .control-group {
             display: flex;
-            align-items: center;
-            gap: 8px;
+            flex-direction: column;
+            gap: 12px;
         }
 
         .control-label {
             font-size: 12px;
-            font-weight: 500;
-            color: #f4f4f5;
+            font-weight: 600;
+            color: #a1a1aa;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
         }
 
         /* Slider */
         .slider-container {
             display: flex;
             align-items: center;
-            gap: 8px;
+            gap: 12px;
+            width: 100%;
         }
 
         input[type=range] {
             -webkit-appearance: none;
-            width: 100px;
+            flex: 1;
             background: transparent;
         }
 
         input[type=range]::-webkit-slider-thumb {
             -webkit-appearance: none;
-            height: 16px;
-            width: 6px;
-            border-radius: 3px;
-            background: #94a3b8;
+            height: 18px;
+            width: 18px;
+            border-radius: 50%;
+            background: #3b82f6;
             cursor: pointer;
-            margin-top: -6px;
+            margin-top: -7px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.5);
         }
 
         input[type=range]::-webkit-slider-runnable-track {
             width: 100%;
             height: 4px;
             cursor: pointer;
-            background: #52525b;
+            background: #3f3f46;
             border-radius: 2px;
         }
         
         .value-box {
-            background-color: #1e1e24;
-            border: 1px solid #52525b;
+            background-color: #27272a;
+            border: 1px solid #3f3f46;
             border-radius: 6px;
-            padding: 4px 10px;
+            padding: 4px 12px;
             font-weight: bold;
-            font-size: 12px;
-            min-width: 15px;
+            font-size: 13px;
             text-align: center;
             color: #fff;
+            min-width: 20px;
         }
 
         /* Button Groups */
         .btn-group {
             display: flex;
-            border-radius: 6px;
+            flex-direction: column;
+            border-radius: 8px;
             overflow: hidden;
-            border: 1px solid #3b82f6;
+            border: 1px solid #3f3f46;
+            background-color: #1e1e24;
         }
 
         .btn {
             background-color: transparent;
-            color: #cbd5e1;
+            color: #a1a1aa;
             border: none;
-            padding: 6px 12px;
-            font-size: 11px;
+            padding: 10px 14px;
+            font-size: 13px;
             font-weight: 500;
             cursor: pointer;
             transition: all 0.2s;
+            text-align: left;
+            border-bottom: 1px solid #3f3f46;
+        }
+
+        .btn:last-child {
+            border-bottom: none;
         }
 
         .btn.active {
-            background-color: #2b4c9b; 
+            background-color: #3b82f6; 
             color: white;
+            font-weight: 600;
         }
 
         .btn:hover:not(.active) {
-            background-color: #3f3f46;
-        }
-
-        /* Borderless Group for Pattern */
-        #pattern-group {
-            border: none;
-            background-color: transparent;
-        }
-
-        #pattern-group .btn {
-            border-radius: 6px;
-            margin: 0 2px;
-        }
-
-        #pattern-group .btn.active {
-            background-color: #2b4c9b;
+            background-color: #27272a;
+            color: #fff;
         }
 
         .action-btn {
             background-color: #3f3f46;
             color: white;
             border: none;
-            padding: 8px 16px;
+            padding: 12px;
             border-radius: 8px;
-            font-size: 11px;
-            font-weight: 500;
+            font-size: 13px;
+            font-weight: 600;
             cursor: pointer;
             transition: background-color 0.2s;
+            text-align: center;
+            margin-top: auto; /* pushes to bottom if container stretches */
         }
 
         .action-btn:hover {
             background-color: #52525b;
         }
 
+        /* --- Visualization Main Area --- */
+        .viz-card {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            background-color: #151518;
+            border-radius: 16px;
+            box-shadow: 0 8px 24px rgba(0,0,0,0.4);
+            border: 1px solid #3f3f46;
+            padding: 24px 0;
+            position: relative;
+            overflow: hidden;
+            min-width: 0; /* allows shrinking below content size if necessary */
+        }
+
+        .viz-header {
+            width: 100%;
+            display: flex;
+            justify-content: flex-start;
+            padding: 0 24px 16px 24px;
+            box-sizing: border-box;
+        }
+
+        .separator {
+            width: 100%;
+            height: 1px;
+            background-color: #27272a;
+            margin: 24px 0;
+        }
+
         .toggle-btn {
-            position: absolute;
-            top: 10px;
-            left: 10px;
             background-color: transparent;
-            color: #fff;
-            border: 1px solid #fff;
-            padding: 4px 10px;
-            border-radius: 12px;
-            font-size: 10px;
+            color: #a1a1aa;
+            border: 1px solid #3f3f46;
+            padding: 6px 16px;
+            border-radius: 20px;
+            font-size: 11px;
             font-weight: 600;
             cursor: pointer;
-            z-index: 10;
+            transition: all 0.2s;
         }
 
         .toggle-btn:hover {
-            background-color: rgba(255,255,255,0.1);
+            border-color: #52525b;
+            color: #e2e8f0;
         }
 
-        /* --- Visualization --- */
+        .toggle-btn.active-view {
+            color: #fff;
+            border-color: #3b82f6;
+            background-color: rgba(59, 130, 246, 0.15);
+        }
+
+        /* --- Visualization Stages --- */
         #scatter-stage, #tree-stage {
             position: relative;
         }
 
         /* Scatter */
-        .dot { stroke: #151518; stroke-width: 1px; }
+        .dot { stroke: #151518; stroke-width: 1.5px; }
         
         /* Tree */
-        .node circle { stroke: #a1a1aa; stroke-width: 2px; cursor: pointer; }
-        .link { fill: none; stroke: #52525b; stroke-width: 1.5px; }
-        .node-label { fill: #f8fafc; font-size: 10px; font-weight: 700; }
-        .class-label { fill: #f8fafc; font-size: 10px; font-weight: 700; }
+        .node circle { stroke: #a1a1aa; stroke-width: 3px; cursor: pointer; transition: stroke-width 0.2s; }
+        .node circle:hover { stroke: #fff; stroke-width: 4px; }
+        .link { fill: none; stroke: #3f3f46; stroke-width: 2px; }
+        .node-label { fill: #f8fafc; font-size: 11px; font-weight: 700; }
+        .class-label { fill: #f8fafc; font-size: 11px; font-weight: 700; }
 
         .tooltip {
             position: absolute;
             background: #27272a;
             color: white;
-            padding: 8px 12px;
-            border-radius: 6px;
-            font-size: 11px;
+            padding: 10px 14px;
+            border-radius: 8px;
+            font-size: 12px;
             pointer-events: none;
             opacity: 0;
             transition: opacity 0.2s;
             z-index: 100;
-            box-shadow: 0 4px 10px rgba(0,0,0,0.4);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.5);
             border: 1px solid #3f3f46;
+            line-height: 1.4;
+        }
+
+        /* Responsive */
+        @media (max-width: 850px) {
+            #main-wrapper {
+                flex-direction: column;
+            }
+            .controls-container {
+                width: 100%;
+                box-sizing: border-box;
+                flex: none;
+                flex-direction: row;
+                flex-wrap: wrap;
+                align-items: flex-start;
+            }
+            .control-group {
+                flex: 1;
+                min-width: 150px;
+            }
+            .action-btn {
+                width: 100%;
+                margin-top: 10px;
+            }
         }
     </style>
 </head>
 <body>
 
     <div id="main-wrapper">
-        <div class="card viz-card">
-            <button id="toggle-regions" class="toggle-btn">DECISION REGIONS</button>
-            <div id="scatter-stage"></div>
-            
-            <div class="separator"></div>
-            
-            <div id="tree-stage"></div>
-        </div>
-
+        <!-- Sidebar Controls -->
         <div class="controls-container">
             <div class="control-group">
                 <span class="control-label">Max Depth</span>
                 <div class="slider-container">
-                    <input type="range" id="maxDepth" min="1" max="7" value="3">
+                    <input type="range" id="maxDepth" min="1" max="6" value="3">
                     <div id="maxDepthVal" class="value-box">3</div>
                 </div>
             </div>
@@ -254,7 +284,7 @@
             </div>
 
             <div class="control-group">
-                <span class="control-label">Pattern</span>
+                <span class="control-label">Data Pattern</span>
                 <div class="btn-group" id="pattern-group">
                     <button class="btn active" data-val="moons">Moons</button>
                     <button class="btn" data-val="xor">XOR</button>
@@ -262,7 +292,20 @@
                 </div>
             </div>
 
-            <button id="new-data-btn" class="action-btn">New Data</button>
+            <button id="new-data-btn" class="action-btn">Generate New Data</button>
+        </div>
+
+        <!-- Main Viz -->
+        <div class="viz-card">
+            <div class="viz-header">
+                <button id="toggle-regions" class="toggle-btn active-view">Decision Regions</button>
+            </div>
+            
+            <div id="scatter-stage"></div>
+            
+            <div class="separator"></div>
+            
+            <div id="tree-stage"></div>
         </div>
     </div>
 
@@ -275,9 +318,9 @@
 let currentPattern = 'moons';
 let showRegions = true;
 let dataset = [];
-const colors = ["#4d90fe", "#ff7675"]; // Class A (Blue), Class B (Pink)
+const colors = ["#3b82f6", "#ef4444"]; // Class A (Blue), Class B (Red)
 
-function generateMoonsData(samples = 150, noise = 0.15) { // Reduced samples for smaller view
+function generateMoonsData(samples = 150, noise = 0.15) {
     const data = [];
     for (let i = 0; i < samples; i++) {
         const side = i < samples / 2 ? 0 : 1;
@@ -334,7 +377,6 @@ class CARTNode {
         this.value = [0, 0];
         this.label = null; 
         this.isLeaf = false;
-        this.purityRatio = 0;
     }
 }
 
@@ -403,9 +445,6 @@ class DecisionTree {
         node.value = this.getCounts(data);
         node.impurity = this.calculateImpurity(node.value);
         node.label = node.value[0] >= node.value[1] ? 0 : 1;
-        
-        const majorityCount = Math.max(node.value[0], node.value[1]);
-        node.purityRatio = majorityCount / node.samples;
 
         if (node.depth >= this.maxDepth || node.impurity === 0 || data.length < 2) {
             node.isLeaf = true;
@@ -447,11 +486,15 @@ class DecisionTree {
 /**
  * --- VISUALIZATION SETUP ---
  */
-const scatterWidth = 430, scatterHeight = 180;
-const treeWidth = 430, treeHeight = 220;
-const margin = { top: 10, right: 10, bottom: 10, left: 10 };
+const scatterWidth = 650, scatterHeight = 250;
+const treeWidth = 650, treeHeight = 350;
+const margin = { top: 20, right: 20, bottom: 20, left: 20 };
 
-const scatterStage = d3.select("#scatter-stage");
+// Setup Scatter Containers
+const scatterStage = d3.select("#scatter-stage")
+    .style("width", (scatterWidth + margin.left + margin.right) + "px")
+    .style("height", (scatterHeight + margin.top + margin.bottom) + "px")
+    .style("margin", "0 auto");
 
 const canvas = scatterStage.append("canvas")
     .attr("width", scatterWidth)
@@ -470,8 +513,13 @@ const scatterSvg = scatterStage.append("svg")
     .append("g")
     .attr("transform", `translate(${margin.left},${margin.top})`);
 
-const treeSvg = d3.select("#tree-stage")
-    .append("svg")
+// Setup Tree Containers
+const treeStage = d3.select("#tree-stage")
+    .style("width", (treeWidth + margin.left + margin.right) + "px")
+    .style("height", (treeHeight + margin.top + margin.bottom) + "px")
+    .style("margin", "0 auto");
+
+const treeSvg = treeStage.append("svg")
     .attr("width", treeWidth + margin.left + margin.right)
     .attr("height", treeHeight + margin.top + margin.bottom)
     .append("g")
@@ -514,7 +562,7 @@ function renderScatterPlot(tree) {
                 const py = y.invert(my + gridSize/2);
                 const label = tree.predictPoint({x: px, y: py});
                 
-                ctx.fillStyle = label === 0 ? "rgba(77, 144, 254, 0.25)" : "rgba(255, 118, 117, 0.25)";
+                ctx.fillStyle = label === 0 ? "rgba(59, 130, 246, 0.25)" : "rgba(239, 68, 68, 0.25)";
                 ctx.fillRect(mx, my, gridSize, gridSize);
                 ctx.strokeRect(mx, my, gridSize, gridSize);
             }
@@ -525,7 +573,7 @@ function renderScatterPlot(tree) {
         .data(dataset)
         .enter().append("circle")
         .attr("class", "dot")
-        .attr("r", 4)
+        .attr("r", 5)
         .attr("cx", d => x(d.x))
         .attr("cy", d => y(d.y))
         .style("fill", d => colors[d.label]);
@@ -554,17 +602,16 @@ function renderTreeDiagram(rootNode) {
         .attr("transform", d => "translate(" + d.x + "," + d.y + ")");
 
     node.append("circle")
-        .attr("r", 8)
+        .attr("r", 12)
         .style("fill", d => d.children ? "#3f3f46" : colors[d.data.label])
         .on("mouseover", function(event, d) {
-            d3.select(this).style("stroke", "#fff");
             tooltip.transition().duration(200).style("opacity", 1);
             tooltip.html(`
                 <strong>Node Stats</strong><br/>
                 Impurity: ${d.data.impurity.toFixed(3)}<br/>
                 Samples: ${d.data.samples}<br/>
                 Values: [${d.data.value[0]}, ${d.data.value[1]}]<br/>
-                Class: ${d.data.label === 0 ? 'Class A' : 'Class B'}
+                Class: ${d.data.label === 0 ? 'Class A (Blue)' : 'Class B (Red)'}
             `)
             .style("left", (event.pageX + 15) + "px")
             .style("top", (event.pageY - 28) + "px");
@@ -574,7 +621,6 @@ function renderTreeDiagram(rootNode) {
                    .style("top", (event.pageY - 28) + "px");
         })
         .on("mouseout", function() {
-            d3.select(this).style("stroke", "#a1a1aa");
             tooltip.transition().duration(500).style("opacity", 0);
         });
 
@@ -584,9 +630,6 @@ function renderTreeDiagram(rootNode) {
         .attr("text-anchor", "middle")
         .attr("class", "node-label")
         .text(d => `${d.data.fName.toUpperCase()} ≤ ${d.data.threshold.toFixed(2)}`);
-
-    const leafNodes = node.filter(d => !d.children);
-    // Removed text labels for leaf nodes to reduce crowding
 }
 
 /**
@@ -618,7 +661,7 @@ d3.select("#new-data-btn").on("click", function() {
 
 d3.select("#toggle-regions").on("click", function() {
     showRegions = !showRegions;
-    d3.select(this).style("background-color", showRegions ? "rgba(255,255,255,0.1)" : "transparent");
+    d3.select(this).classed("active-view", showRegions);
     updateVisuals();
 });
 
